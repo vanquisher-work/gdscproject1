@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="medistyle.css">
+  <title>Medicine Alternatives</title>
+</head>
+<body>
+
+<div id="authContainer">
+  <h2>Login or Sign Up</h2>
+
+  <form id="authForm">
+    <label for="email">Email:</label>
+    <input type="email" id="email" name="email" required>
+
+    <label for="password">Password:</label>
+    <input type="password" id="password" name="password" required autocomplete="current-password">
+
+    <button type="button" onclick="authenticateUser()">Sign In</button>
+    <button type="button" onclick="signUpUser()">Sign Up</button>
+    
+  </form>
+</div>
+
+<div id="mainFunctionality" style="display: none;">
+  <h2 id="userName">Orders for <span id="userDisplayName"></span></h2>
+
+  <form id="medicineForm">
+    <label for="brandMedicine">Enter Branded Medicine:</label>
+    <input type="text" id="brandMedicine" name="brandMedicine" required>
+    
+    <button type="button" onclick="getAlternatives()">Find Alternatives</button>
+
+    
+    <div id="alternativesContainer"></div>
+
+   
+    <div id="buySection" style="display: none;">
+      <label for="selectedGenericMedicine">Select Generic Medicine:</label>
+      <select id="selectedGenericMedicine" name="selectedGenericMedicine"></select>
+      <label for="quantity">Quantity:</label>
+      <input type="number" id="quantity" name="quantity" required>
+      <label for="address">Delivery Address:</label>
+      <textarea id="address" name="address" rows="4" required></textarea>
+      <label for="storeSelection">Select Store:</label>
+      <select id="storeSelection" name="storeSelection"></select>
+
+      <button type="button" class="Buy" onclick="buyMedicine()">Buy</button>
+    </div>
+  </form>
+ 
+  <p id="result"></p>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
+
+<script>
+  const firebaseConfig = {
+  apiKey: "AIzaSyC5Cl2ItPEWTOoxZJLBoqQrsnK6ay496as",
+  authDomain: "genericmedicine-a419f.firebaseapp.com",
+  projectId: "genericmedicine-a419f",
+  storageBucket: "genericmedicine-a419f.appspot.com",
+  messagingSenderId: "676874486219",
+  appId: "1:676874486219:web:23dee7f316ec445991f64e",
+  measurementId: "G-64RBW8Q9Y2"
+};
+
+  firebase.initializeApp(firebaseConfig);
+
+  function authenticateUser() {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    firebase.auth().signInWithEmailAndPassword(email, password)
+      .then((userCredential) => {
+        const user = userCredential.user;
+        console.log("Authentication successful:", user);
+        checkAuthStatus(); 
+      })
+      .catch((error) => {
+        if (error.code === "auth/user-not-found") {
+          firebase.auth().createUserWithEmailAndPassword(email, password)
+            .then((userCredential) => {
+              const user = userCredential.user;
+              console.log("Account created successfully:", user);
+              checkAuthStatus(); 
+            })
+            .catch((error) => {
+              const errorCode = error.code;
+              const errorMessage = error.message;
+              console.error("Account creation error:", errorCode, errorMessage);
+            });
+        } else {
+          const errorCode = error.code;
+          const errorMessage = error.message;
+          console.error("Authentication error:", errorCode, errorMessage);
+          alert("Authentication failed. Please check your email and password.");
+        }
+      });
+  }
+
+  function signUpUser() {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  firebase.auth().createUserWithEmailAndPassword(email, password)
+    .then((userCredential) => {
+      const user = userCredential.user;
+      console.log("Account created successfully:", user);
+      checkAuthStatus();
+    })
+    .catch((error) => {
+      const errorCode = error.code;
+      const errorMessage = error.message;
+      console.error("Sign Up error:", errorCode, errorMessage);
+      alert("Sign Up failed. Please check your email and password.");
+    });
+}
+
+  function checkAuthStatus() {
+    firebase.auth().onAuthStateChanged((user) => {
+      if (user) {
+        const userDisplayName = user.displayName || user.email; 
+        document.getElementById("userDisplayName").innerText = userDisplayName;
+        document.getElementById("userName").innerText = `Orders for ${userDisplayName}`;
+        document.getElementById("authContainer").style.display = "none";
+        document.getElementById("mainFunctionality").style.display = "block";
+        updateStoreSelection();
+      } else {
+        document.getElementById("userName").innerText = "Orders for null";
+        document.getElementById("authContainer").style.display = "block";
+        document.getElementById("mainFunctionality").style.display = "none";
+      }
+    });
+  }
+  function updateStoreSelection() {
+    const storeSelection = document.getElementById("storeSelection");
+    storeSelection.innerHTML = ""; 
+
+   
+    firebase.firestore().collection('sellers').get()
+      .then((querySnapshot) => {
+        querySnapshot.forEach((doc) => {
+          const sellerData = doc.data();
+          const option = document.createElement("option");
+          option.value = sellerData.store;
+          option.text = sellerData.store;
+          storeSelection.appendChild(option);
+        });
+      })
+      .catch((error) => {
+        console.error("Error fetching stores:", error);
+      });
+  }
+  let selectedMedicinePrice;
+  const medicineData = [
+    { brand_name: "Acetaminophen", generic_alternatives: ["Paracetamol"], price: 5 },
+    { brand_name: "Acetaminophen", generic_alternatives: ["Paracetamol"] , price: 7 },
+    { brand_name: "Panadol", generic_alternatives: ["Paracetamol"] , price: 7 },
+    { brand_name: "Dolo 650", generic_alternatives: ["Paracetamol"], price: 7  },
+    { brand_name: "Prilosec", generic_alternatives: ["Omeprazole"] ,price: 9.9 },
+    { brand_name: "Amoxil", generic_alternatives: ["Amoxicillin"] ,price: 10.4 },
+    { brand_name: "Lipitor", generic_alternatives: ["Atorvastatin"] ,price: 12 },
+    { brand_name: "Zyrtec", generic_alternatives: ["Cetirizine"] ,price: 9.33 },
+    { brand_name: "Benadryl", generic_alternatives: ["Cetirizine"] ,price: 9.33  },
+    { brand_name: "Motrin", generic_alternatives: ["Ibuprofen"],price: 3  },
+    { brand_name: "Advil", generic_alternatives: ["Ibuprofen"] ,price: 3},
+    { brand_name: "Aleve", generic_alternatives: ["Naproxen"] ,price:15.33},
+    { brand_name: "Disprin", generic_alternatives: ["Aspirin"] ,price:3.57},
+    { brand_name: "Aspro clear", generic_alternatives: ["Aspirin"]  ,price:3.57},
+    { brand_name: "Glucophage", generic_alternatives: ["Metformin"] ,price:6.6},
+   
+    { brand_name: "Prinivil", generic_alternatives: ["Lisinopril"] ,price:10},
+    { brand_name: "Zestril", generic_alternatives: ["Lisinopril"] ,price:10},
+    { brand_name: "Norvasc", generic_alternatives: ["Amlodipine"] ,price:5.5},
+    { brand_name: "Cozaar", generic_alternatives: ["Losartan"] ,price:7.7},
+    { brand_name: "Hydrochlorothiazide", generic_alternatives: ["Hydrochlorothiazide"] ,price:6},
+    { brand_name: "Zocor", generic_alternatives: ["Simvastatin"] ,price:11},
+    { brand_name: "Flonase", generic_alternatives: ["Fluticasone Propionate cream 0.5mg"] ,price:20},
+    { brand_name: "Singulair", generic_alternatives: ["Montelukast 5 mg"] ,price:15},
+
+    { brand_name: "Prilosec", generic_alternatives: ["Omeprazole"] ,price:9.9},
+    { brand_name: "Prevacid", generic_alternatives: ["Lansoprazole"] ,price:20},
+    { brand_name: "Protonix", generic_alternatives: ["Pantoprazole 40mg"] ,price:12.1},
+    { brand_name: "Zantac", generic_alternatives: ["Ranitidine"] ,price:7.67},
+    { brand_name: "Tagamet", generic_alternatives: ["Cimetidine 200mg"],price:19 },
+    { brand_name: "Claritin", generic_alternatives: ["Loratadine"] ,price:73.7},
+    { brand_name: "Benadryl", generic_alternatives: ["Diphenhydramine"],price:18 },
+    { brand_name: "Imodium", generic_alternatives: ["Loperamide"] ,price:7.7},
+    { brand_name: "Dulcolax", generic_alternatives: ["Bisacodyl"] ,price:6},
+    
+    
+    { brand_name: "Circadin", generic_alternatives: ["Melatonin"] ,price:166},
+    { brand_name: "Valium", generic_alternatives: ["Diazepam"] ,price:6},
+    { brand_name: "Xanax", generic_alternatives: ["Alprazolam 0.5mg"] ,price:7.7 },
+    { brand_name: "Ativan", generic_alternatives: ["Lorazepam 2mg"] ,price:12},
+    { brand_name: "Zoloft", generic_alternatives: ["Sertraline 50mg"] ,price:15},
+    { brand_name: "Prozac", generic_alternatives: ["Fluoxetine"] ,price:8.8},
+    { brand_name: "Celexa", generic_alternatives: ["Citalopram"] ,price:10},
+    { brand_name: "Crestor", generic_alternatives: ["Rosuvastatin 5mg"],price:13.2 },
+   
+    { brand_name: "Nexium", generic_alternatives: ["Esomeprazole 40mg"] ,price:20.9},
+    
+    { brand_name: "Advair Diskus", generic_alternatives: ["Fluticasone propionate/Salmeterol IP0.05%"] ,price:20},
+    { brand_name: "Lantus Solostar", generic_alternatives: ["Glargine insulin"] ,price:340},
+   
+    { brand_name: "Lyrica", generic_alternatives: ["Pregabalin"] ,price:22},
+    { brand_name: "Spiriva Handihaler", generic_alternatives: ["Tiotropium bromide"] ,price:50},
+    { brand_name: "Diovan", generic_alternatives: ["Valsartan"] ,price:36.3},
+    
+    { brand_name: "Januvia", generic_alternatives: ["Sitagliptin"] ,price:60},
+    { brand_name: "Abilify", generic_alternatives: ["Aripiprazole"] ,price:14},
+    { brand_name: "Celebrex", generic_alternatives: ["Celecoxib generic not available"] ,price:140},
+    { brand_name: "Cialis", generic_alternatives: ["Tadalafil 10mg 4 tabs"] ,price:80.47},
+    { brand_name: "Viagra", generic_alternatives: ["Sildenafil 50 mg 4 tabs"] ,price:10 },
+    { brand_name: "Symbicort", generic_alternatives: ["Budesonide0.5mg/Formoterol 20mcg Respirator suspension 2ml"] ,price:15},
+    { brand_name: "Zetia", generic_alternatives: ["Ezetimibe"] ,price:140},
+    { brand_name: "Nasonex", generic_alternatives: ["Mometasone furoate cream 0.1%"],price:18 },
+
+    { brand_name: "Namenda", generic_alternatives: ["Memantine"] ,price:25},
+    { brand_name: "Bystolic", generic_alternatives: ["Nebivolol 5mg"],price:44 },
+
+    { brand_name: "Xarelto", generic_alternatives: ["Rivaroxaban"],price:107.14 },
+    { brand_name: "Flovent HFA", generic_alternatives: ["Fluticasone propionate"] ,price:20},
+
+    { brand_name: "Cymbalta", generic_alternatives: ["Duloxetine"] ,price:27},
+   
+    { brand_name: " WP Thyroid", generic_alternatives: ["Levothyroxine"] ,price:184},
+    { brand_name: " NP Thyroid", generic_alternatives: ["Levothyroxine"] ,price:184},
+    { brand_name: "Voltaren Gel", generic_alternatives: ["Diclofenac gel 1.16% w/w 15g "],price:12 },
+    { brand_name: "Dexilant", generic_alternatives: ["Dexlansoprazole"] ,price:201},
+    { brand_name: "Benicar", generic_alternatives: ["Olmesartan"] ,price:17},
+    
+    { brand_name: "Tamiflu", generic_alternatives: ["Oseltamivir"] ,price:350},
+    { brand_name: "Novolog Flexpen", generic_alternatives: ["Insulin aspart"] ,price:0},
+    { brand_name: "Humalog", generic_alternatives: ["Insulin lispro"] ,price:0},
+    { brand_name: "Novolog", generic_alternatives: ["Insulin aspart"] ,price:0},
+    { brand_name: "Premarin", generic_alternatives: ["Conjugated estrogens generic not available pfizer tablet"] ,price:1141.97},
+    { brand_name: "Vesicare", generic_alternatives: ["Solifenacin succinate 5mg"] ,price:170},
+   
+    { brand_name: "Afluria", generic_alternatives: ["Oseltamivir phosphate 75mg"] ,price:350},
+    { brand_name: "Lumigan", generic_alternatives: ["Brimonidine tartrate 0.1% w/w 5ml eye drop"] ,price:20},
+   
+    { brand_name: "Janumet", generic_alternatives: ["Sitagliptin/Metformin"] ,price:6.6},
+    { brand_name: "Ortho-Tri-Cyclen Lo 28", generic_alternatives: ["Norgestimate/Ethinyl estradiol0.05mg"] ,price:30},
+    { brand_name: "Combivent Respimat", generic_alternatives: ["Ipratropium bromide/Albuterol 15ml"] ,price:28},
+    { brand_name: "Toprol-XL", generic_alternatives: ["Metoprolol succinate"] ,price:11},
+    { brand_name: "Pristiq", generic_alternatives: ["Desvenlafaxine succinate"] ,price:50},
+    { brand_name: "Travatan Z", generic_alternatives: ["Travoprost 2.5ml"] ,price:170},
+    { brand_name: "Pataday", generic_alternatives: ["Olopatadine hydrochloride 10ml vial"],price:45 },
+    { brand_name: "Humalog Kwikpen", generic_alternatives: ["Insulin lispro"] ,price:0},
+    { brand_name: "Vytorin", generic_alternatives: ["Ezetimibe/Simvastatin"] ,price:69.71},
+    { brand_name: "Minastrin 24 Fe", generic_alternatives: ["Norethindrone/Ethinyl estradiol/Ferrous fumarate"] ,price:14.21},
+   
+    { brand_name: "Avodart", generic_alternatives: ["Dutasteride"] ,price:102},
+    { brand_name: "Seroquel XR", generic_alternatives: ["Quetiapine fumarate 200mg"],price: 65},
+
+    { brand_name: "Pradaxa", generic_alternatives: ["Dabigatran etexilate"] ,price:137},
+  ];
+  function getAlternatives() {
+ 
+
+  const brandMedicineInput = document.getElementById("brandMedicine").value;
+  const resultDisplay = document.getElementById("result");
+  const alternativesContainer = document.getElementById("alternativesContainer");
+  const buySection = document.getElementById("buySection");
+
+  const medicineEntry = medicineData.find(entry => entry.brand_name.toLowerCase() === brandMedicineInput.toLowerCase());
+
+  if (medicineEntry) {
+    const alternatives = medicineEntry.generic_alternatives.map(alternative => {
+      const selectedMedicinePrice = medicineEntry.price; // Access price directly from medicineEntry
+      return `${alternative} - $${selectedMedicinePrice.toFixed(2)}`;
+    }).join(', ');
+
+    resultDisplay.innerHTML = `Generic Alternatives for ${brandMedicineInput}: ${alternatives}`;
+    alternativesContainer.innerHTML = `<p>Choose from alternatives: ${alternatives}</p>`;
+
+    const selectGenericMedicine = document.getElementById("selectedGenericMedicine");
+    selectGenericMedicine.innerHTML = "";
+    medicineEntry.generic_alternatives.forEach(option => {
+      const optionElement = document.createElement("option");
+      optionElement.value = option;
+      optionElement.text = option;
+      selectGenericMedicine.appendChild(optionElement);
+    });
+
+    buySection.style.display = 'block';
+  } else {
+    resultDisplay.innerHTML = `No data found for ${brandMedicineInput}`;
+    alternativesContainer.innerHTML = "";
+    buySection.style.display = 'none';
+  }
+}
+
+  
+
+function buyMedicine() {
+  const brandMedicineInput = document.getElementById("brandMedicine").value;
+  const selectedGenericMedicine = document.getElementById("selectedGenericMedicine").value;
+  const quantityInput = parseInt(document.getElementById("quantity").value); // Parse quantity to number
+  const addressInput = document.getElementById("address").value;
+  const selectedStore = document.getElementById("storeSelection").value;
+  const medicineEntry = medicineData.find(entry => entry.generic_alternatives.includes(selectedGenericMedicine));
+const selectedMedicinePrice = medicineEntry.price;
+
+
+  // Check if a price has been selected before calculation
+  if (!selectedMedicinePrice) {
+    alert("Please select a medicine first to view the price.");
+    return; // Exit the function if no price is available
+  }
+
+  const totalOrderPrice = selectedMedicinePrice * quantityInput;
+    const user = firebase.auth().currentUser;
+
+    if (user) {
+      
+      
+       
+
+        firebase.firestore().collection('buyRequests').add({
+          userName: user.email,
+          brandMedicine: brandMedicineInput,
+          genericMedicine: selectedGenericMedicine,
+          quantity: quantityInput,
+          address: addressInput,
+          store: selectedStore,
+          totalOrderPrice: totalOrderPrice
+        });
+
+        alert(`Buy request sent to ${selectedStore}. Total order price: $${totalOrderPrice.toFixed(2)}`);
+      }
+    }
+  
+</script>
+
+</body>
+</html>

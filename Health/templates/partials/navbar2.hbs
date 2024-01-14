@@ -1,0 +1,162 @@
+ 
+ <style>
+  body {
+    margin: 0;
+    font-family: 'Arial', sans-serif;
+}
+
+.head {
+    position: sticky;
+    top: 0;
+    background-color: whitesmoke;
+    padding: 10px 20px;
+    z-index: 1000;
+    border: 2px solid whitesmoke;
+    
+}
+
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.nav-links {
+    list-style: none;
+    display: flex;
+    margin-left: 20px;
+}
+
+.nav-links li {
+    margin-right: 50px;
+    
+}
+
+.nav-links li a {
+    text-decoration: none;
+    color: black;
+    font-size: x-large;
+}
+.nav-links li:hover{
+  transform: scale(1.1);
+    transition: 0.5s;
+    
+}
+.nav-links li a:hover{
+  transform: scale(1.1);
+    transition: 0.5s;
+    text-decoration: underline;
+}
+
+.logo img {
+    height: 40px;
+    margin-right: 20px;
+}
+
+.login-button a {
+    padding: 8px 15px;
+    background-color: rgb(1, 1, 92);
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    border: 2px solid black;
+}
+
+.login-button a:hover {
+    
+   
+}
+.butn{
+  margin-right: 20px;
+}
+.butn:hover{
+  transform: scale(1.8);
+    transition: 0.5s;
+    background-color: rgb(6, 6, 134);
+   border: 1px solid rgb(58, 52, 52);
+}
+
+#logo{
+    color: rgb(179, 27, 0);
+    text-decoration: none;
+    font-size:xx-large;
+    font-weight: 900;
+}
+
+/* Responsive Styles */
+@media screen and (max-width: 768px) {
+    .navbar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .nav-links {
+        margin-left: 0;
+        margin-top: 10px;
+    }
+
+    .nav-links li {
+        margin: 0;
+        margin-bottom: 10px;
+    }
+
+    .logo img {
+        margin-right: 0;
+        margin-bottom: 10px;
+    }
+
+    .login-button {
+        margin-top: 10px;
+    }
+}
+
+</style>
+ 
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <title>Your Website</title>
+</head>
+<body>
+
+
+<div class="head">
+    <nav class="navbar">
+        <div class="logo">
+           <a class="navbar-brand" href="/" id="logo">MedSync</a>
+            {{!-- <img src="logo.png" alt="Logo"> --}}
+        </div>
+        <ul class="nav-links">
+            <li><a href="/">Home</a></li>
+             <li><a href="/generic">Find & Buy Generic Med.</a></li>
+             
+            <li><a href="#aboutid">About</a></li>
+            <li><a href="#serviceid">Services</a></li>
+            <li><a href="/calorimeter">Nutrition</a></li>
+            <li><a href="/blogs">Blogs</a></li>
+        </ul>
+        <div class="login-button">
+            <a  class="butn" href="/">Logout</a>
+        </div>
+    </nav>
+</div>
+
+<!-- Your website content goes here -->
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Center Locator</title>
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="styles.css">
+</head>
+<style>
+    body {
+    margin: 0;
+    padding: 0;
+    
+    height: 100vh;
+    background-image: url('images/doctor8.jpg');
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+header {
+        background-color: rgb(0, 100, 0);
+        color: white;
+        text-align: center;
+        padding: 1em;
+        border: 2px solid black;
+      }
+#map {
+     
+     height: 600px;
+     width: 100%;
+     position: absolute;
+     top:58%;
+    left: 0%;
+}
+
+#locationInput {
+    
+    height: 200px;
+    width: 300px;
+    padding: 20px;
+    box-sizing: border-box;
+    background-color: #f0f0f0;
+    position: absolute;
+    top: 28%;
+    left: 40%;
+    border-radius: 15px;
+    
+}
+
+#locationInput h2 {
+    margin-bottom: 10px;
+    color: green;
+    
+}
+
+#locationInputField{
+     font-size: large; 
+    border-radius: 5px;
+}
+input {
+    margin-bottom: 10px;
+    position:absolute;
+    left: 5%;
+}
+button{
+    margin-top: 15px;
+    position:absolute;
+    top: 55%;
+    right: 40%;
+    font-size: large;
+    border-radius: 5px;
+    background-color: rgb(15, 105, 15);
+    border: 2px solid black;
+}
+
+button:hover{
+    transition: 0.5s;
+    transform:scale(1.1);
+    background-color:rgb(9, 172, 9) ;
+}
+</style>
+<body>
+      {{>navbar}}
+      
+    <header>
+      <h1>Health Care Location Predictor</h1>
+    </header>
+    
+    <div id="locationInput">
+        <h2>Enter Location:</h2>
+        <form onsubmit="return false;">
+            <input type="text" id="locationInputField" placeholder="Type location..." />
+            <button onclick="searchLocation()">Search</button>
+        </form>
+    </div>
+    <div id="map"></div>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script >let map;
+
+function initializeMap(latitude, longitude) {
+    if (map) {
+        map.eachLayer(layer => {
+            if (layer instanceof L.Marker) {
+                map.removeLayer(layer);
+            }
+        });
+        map.setView([latitude, longitude], 14);
+    } else {
+        map = L.map('map').setView([latitude, longitude], 14);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+    }
+}
+
+function showMarkers(healthCenters) {
+    healthCenters.forEach(center => {
+        const name = center.tags && center.tags.name ? center.tags.name : 'Unnamed Health Center';
+        const lat = center.lat;
+        const lng = center.lon;
+
+        L.marker([lat, lng]).addTo(map)
+            .bindPopup(name);
+    });
+}
+
+if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+        position => {
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+
+            initializeMap(latitude, longitude);
+
+            const overpassQuery = `[out:json];
+                (
+                    node["amenity"="hospital"](around:1000,${latitude},${longitude});
+                    node["amenity"="clinic"](around:1000,${latitude},${longitude});
+                );
+                out body;`;
+
+            fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(overpassQuery)}`)
+                .then(response => response.json())
+                .then(data => {
+                    showMarkers(data.elements);
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                });
+        },
+        error => showError(error),
+        { enableHighAccuracy: true }
+    );
+} else {
+    alert("Geolocation is not supported by this browser.");
+}
+
+function searchLocation() {
+    const locationInputField = document.getElementById('locationInputField');
+    const location = locationInputField.value;
+
+    const geocodingApiUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}`;
+
+    fetch(geocodingApiUrl)
+        .then(response => response.json())
+        .then(data => {
+            if (data.length > 0) {
+                const latitude = parseFloat(data[0].lat);
+                const longitude = parseFloat(data[0].lon);
+
+                initializeMap(latitude, longitude);
+
+                const overpassQuery = `[out:json];
+                    (
+                        node["amenity"="hospital"](around:1000,${latitude},${longitude});
+                        node["amenity"="clinic"](around:1000,${latitude},${longitude});
+                    );
+                    out body;`;
+
+                fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(overpassQuery)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        showMarkers(data.elements);
+                    })
+                    .catch(error => {
+                        console.error('Error fetching data:', error);
+                    });
+            } else {
+                alert('Location not found. Please try again.');
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching geocoding data:', error);
+        });
+}
+
+function showError(error) {
+    switch(error.code) {
+        case error.PERMISSION_DENIED:
+            alert("User denied the request for Geolocation.");
+            break;
+        case error.POSITION_UNAVAILABLE:
+            alert("Location information is unavailable.");
+            break;
+        case error.TIMEOUT:
+            alert("The request to get user location timed out.");
+            break;
+        case error.UNKNOWN_ERROR:
+            alert("An unknown error occurred.");
+            break;
+    }
+}
+</script>
+<script src="../jq/jquery.js" type="text/javascript"></script>
+     <script src="../js/bootstrap.js" type="text/javascript"></script>
+</body>
+</html>

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shopkeeper Dashboard</title>
+  <style>
+    .order {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+
+    .hidden {
+      display: none;
+    }
+   
+     h1{
+      color: azure;
+      background-color: #45a049;
+      padding: 12px;
+      border-radius: 10px;
+      /* margin-bottom: 20px; */
+    }
+    .order {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    
+    body {
+      font-family: 'Arial', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f5f5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+    }
+
+   
+
+    #buyRequests {
+      /* background-color: #fff; */
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      width: 80%;
+      text-align: center;
+    }
+  button{
+    margin-top: 2rem;
+    background-color:#45a049;
+    font-size: x-large;
+    color: #f5f5f5;
+    border-radius: 7px;
+    border: 2px solid white;
+  }
+  button:hover{
+    transform: scale(1.1);
+    transition: 0.5s;
+  }
+ 
+
+  </style>
+</head>
+<body>
+
+
+
+
+<h2>Shopkeeper Dashboard</h2>
+
+
+<div id="sellerRegistration">
+  <h3>Seller Registration</h3>
+  <label for="sellerEmail">Seller Email:</label>
+  <input type="email" id="sellerEmail" name="sellerEmail"   required autocomplete="off">
+
+  <label for="sellerPassword">Password:</label>
+  <input type="password" id="sellerPassword" name="sellerPassword" required  autocomplete="off">
+
+  <label for="storeSelection">Choose Store Name:</label>
+  <input type="text" id="storeSelection" name="storeSelection" required>
+
+  <button type="button" onclick="registerSeller()">Register as Seller</button>
+</div>
+
+
+<div id="sellerLogin">
+  <label for="sellerEmailLogin">Seller Email:</label>
+  <input type="email" id="sellerEmailLogin" name="sellerEmailLogin" required>
+
+  <label for="sellerPasswordLogin">Password:</label>
+  <input type="password" id="sellerPasswordLogin" name="sellerPasswordLogin" required>
+
+  <button type="button" onclick="loginSeller()">Login as Seller</button>
+</div>
+
+
+<div id="buyRequests"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"></script>
+
+<script>
+  const firebaseConfig = {
+  
+};
+
+  firebase.initializeApp(firebaseConfig);
+  const database = firebase.firestore();
+
+  let currentSeller = null;
+
+  function registerSeller() {
+    const sellerEmail = document.getElementById("sellerEmail").value;
+    const sellerPassword = document.getElementById("sellerPassword").value;
+    const storeSelection = document.getElementById("storeSelection").value;
+
+   
+    firebase.auth().createUserWithEmailAndPassword(sellerEmail, sellerPassword)
+      .then((userCredential) => {
+        const user = userCredential.user;
+
+        
+        firebase.firestore().collection('sellers').doc(user.uid).set({
+          email: sellerEmail,
+          store: storeSelection,
+        })
+          .then(() => {
+            console.log("Seller registered successfully:", user);
+            alert("Seller registered successfully!");
+          })
+          .catch((error) => {
+            console.error("Error storing seller details:", error);
+            alert("Error storing seller details. Please try again.");
+          });
+      })
+      .catch((error) => {
+        const errorCode = error.code;
+        const errorMessage = error.message;
+        console.error("Seller registration error:", errorCode, errorMessage);
+        alert("Seller registration failed. Please check your email and password.");
+      });
+  }
+  function clearRegistrationForm() {
+    document.getElementById("sellerEmail").value = "";
+    document.getElementById("sellerPassword").value = "";
+    document.getElementById("storeSelection").value = "";
+  }
+  function loginSeller() {
+    const sellerEmail = document.getElementById("sellerEmailLogin").value;
+    const sellerPassword = document.getElementById("sellerPasswordLogin").value;
+
+    firebase.auth().signInWithEmailAndPassword(sellerEmail, sellerPassword)
+      .then((userCredential) => {
+        const user = userCredential.user;
+        console.log("Seller login successful:", user);
+
+       
+        firebase.firestore().collection('sellers').where('email', '==', sellerEmail).get()
+          .then((querySnapshot) => {
+            if (!querySnapshot.empty) {
+              const sellerData = querySnapshot.docs[0].data();
+              currentSeller = sellerData.store;
+              updateOrdersDisplay();
+             document.getElementById("sellerLogin").classList.add("hidden");
+            } else {
+              console.error("No seller data found for the logged-in user.");
+              alert("Seller login failed. Please try again.");
+            }
+          })
+          .catch((error) => {
+            console.error("Error fetching seller data:", error);
+            alert("Seller login failed. Please try again.");
+          });
+      })
+      .catch((error) => {
+        const errorCode = error.code;
+        const errorMessage = error.message;
+        console.error("Seller login error:", errorCode, errorMessage);
+        alert("Seller login failed. Please check your email and password.");
+      });
+  }
+
+  function updateOrdersDisplay() {
+    const buyRequestsDiv = document.getElementById('buyRequests');
+    buyRequestsDiv.innerHTML = ""; 
+
+    database.collection('buyRequests')
+      .where('store', '==', currentSeller) 
+      .onSnapshot((snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === 'added') {
+            const buyRequest = change.doc.data();
+            displayBuyRequest(buyRequest);
+          }
+        });
+      });
+  }
+
+  let orderCount = 1;
+
+  function displayBuyRequest(buyRequest) {
+    const buyRequestsDiv = document.getElementById('buyRequests');
+    const buyRequestDiv = document.createElement('div');
+
+    buyRequestDiv.className = 'order';
+    buyRequestDiv.innerHTML = `<p>Order ${orderCount++}: Name: ${buyRequest.userName}, Medicine: ${buyRequest.genericMedicine}, Quantity: ${buyRequest.quantity}, Total Order Price: ${buyRequest.totalOrderPrice}, Address: ${buyRequest.address}</p>`;
+    buyRequestsDiv.appendChild(buyRequestDiv);
+  }
+
+  
+</script>
+
+</body>
+</html>

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    {{!-- <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script> --}}
+
+   <title>Document</title>
+
+</head>
+<style>
+   body{
+    margin: 0;
+    padding: 0;
+    text-align: center;
+    font-family: sans-serif;
+    height: 100vh;
+    
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-image: url('images/bmi.jpg');
+   }
+    .container{
+        
+        background-color: rgb(213, 217, 222);
+        width: 400px;
+        position: absolute;
+        top: 54%;
+        left: 50%; 
+        transform: translate(-50%,-50%);
+        padding: 5px;
+        box-shadow: 2px 2px 20px #919191;
+         border-radius: 25px;
+    }
+    
+     .calculate{
+        margin-top:20px ;
+        font-size:x-large;
+        margin-bottom:20px ;
+     }
+     .calculate:hover{
+        margin-top:20px ;
+        font-size:x-large;
+        transform: scale(1.1); 
+         transition: 1s;
+     }
+
+     h1{
+        color: rgb(2, 62, 96);
+        text-decoration:dotted;
+        border-radius: 10px;
+     }
+    p{
+    font-size:large;
+    
+       color: black;
+        margin-top: 10px;
+    }
+    .height-input-field{
+        margin-top: 5px;
+        height: 3vh;
+    }
+    .weight-input-field{
+        margin-top: 5px;
+        height: 3vh;
+    }
+    .result{
+        background-color: black;
+        color: aliceblue;
+    }
+    .result-statement{
+        background-color: #4b4949;
+        color: white;
+    }
+</style>
+<body>
+   {{>navbar}}
+<hr>
+
+<div class="container">
+<div class="calculator-container">
+        <h1>BMI CALCULATOR</h1>
+        <p>Height in meters:</p>
+        <input class="height-input-field" type="text">
+        <p>weight in kilograms:</p>
+        <input class="weight-input-field" type="text"><br>
+        <button class="calculate"> Calculate</button>
+    </div>
+    <h3 class="result"></h3>
+    <p class="result-statement"></p>
+    </div>
+    
+    <script src="script.js"></script>
+
+
+<script>
+    var heightInput = document.querySelector(".height-input-field");
+var weightInput = document.querySelector(".weight-input-field");
+var calculateButton = document.querySelector(".calculate");
+var result = document.querySelector(".result");
+var statement = document.querySelector(".result-statement");
+var BMI, height, weight;
+
+calculateButton.addEventListener("click", ()=>{
+    
+    height = heightInput.value;
+    weight = weightInput.value;
+    BMI = weight/(height**2); 
+    result.innerText = BMI;
+
+    if(BMI < 18.5){
+        statement.innerText = "Your BMI falls within the underweight range 😒";    
+    }else if((BMI > 18.5) && (BMI <= 24.9)){
+        statement.innerText = "Your BMI falls within the normal or healthy weight range 😊";
+    }else if((BMI >= 25) && (BMI <= 29.9 )){
+        statement.innerText = "Your BMI falls within the overweight range 😑";
+    }else{
+        statement.innerText = "Your BMI falls within the obese range 😨";
+    }
+});
+
+
+</script>
+
+
+  
+{{!-- hero section ends --}}
+
+{{!-- about us  start --}}
+  
+{{!-- about us  ends --}}
+
+
+{{!-- about services  start --}}
+  
+{{!-- about services  ends --}}
+
+{{!-- maps start --}}
+  {{!-- {{>maps}} --}}
+{{!-- maps ends --}}
+
+{{!-- contact us start --}}
+
+ 
+{{!-- contact us ends --}}
+
+
+    <script src="../jq/jquery.js" type="text/javascript"></script>
+     <script src="../js/bootstrap.js" type="text/javascript"></script>
+</body>
+</html>

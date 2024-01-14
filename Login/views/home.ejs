@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home page</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+
+</head>
+<style>
+   /* Example CSS to style the navigation bar */
+nav {
+    background-color: #333;
+    overflow: hidden;
+}
+
+nav a {
+    float: left;
+    display: block;
+    color: white;
+    text-align: center;
+    padding: 16px 30px;
+    text-decoration: none;
+    font-size: 22px; /* Default font size for other links */
+    font-weight: normal; /* Default font weight for other links */
+}
+
+/* Style the HealHarbor link differently */
+nav a.logo {
+    font-size: 27px; /* Change to your desired font size for HealHarbor */
+    font-weight: bold; /* Change to your desired font weight for HealHarbor */
+    font-family:'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+}
+
+nav a:hover {
+    
+    color: orange;
+    transform: scale(1.1); 
+}
+nav a.logo.no-hover-effect:hover {
+    background-color: transparent;
+    color: white;
+    transform: scale(0);
+}
+
+
+</style>
+
+<body>
+    
+
+
+    <nav>
+        <a href="" class="logo no-hover-effect">HealHarbor</a>
+    <a href="/home">Home</a>
+    <a href="/about">About</a>
+    <a href="/services">Services</a>
+    <a href="/products">Products</a>
+    <a href="/contact">Contact Us</a>
+    <a style="float:right;" href="/login">Login</a>
+    </nav>
+    
+
+
+
+    
+
+</body>
+</html>
